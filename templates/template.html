@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=yes">
+    <title>ClinVar Database - {% block title %}Home{% endblock %}</title>
+    
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XMXDYWMED4"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){window.dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-XMXDYWMED4');
+    </script>
+    
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.18.3/dist/bootstrap-table.min.css">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='images/clinvar_logo.png') }}">
+
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/5.7.0/d3.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    
+    <style>
+        body {
+            padding-top: 70px;
+            background-color: #f8f9fa;
+        }
+        
+        .navbar {
+            box-shadow: 0 2px 4px rgba(0,0,0,.1);
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+        
+        .nav-link {
+            font-weight: 500;
+        }
+        
+        .card {
+            border: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,.1);
+            margin-bottom: 20px;
+            border-radius: 10px;
+        }
+        
+        .card-header {
+            border-radius: 10px 10px 0 0 !important;
+            font-weight: 600;
+        }
+        
+        .table th {
+            border-top: none;
+            font-weight: 600;
+        }
+        
+        .jumbotron {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,.1);
+        }
+        
+        .featurette-heading {
+            font-weight: 700;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 10px 25px;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(66, 78, 132, 0.4);
+        }
+        
+        .stat-card {
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,.1);
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .example {
+            cursor: pointer;
+            color: #764ba2;
+            font-weight: 500;
+        }
+        
+        .example:hover {
+            text-decoration: underline;
+        }
+        
+        .footer {
+            background-color: #81b2e4ff;
+            color: white;
+            padding: 30px 0;
+            margin-top: 50px;
+        }
+        
+        .footer a {
+            color: #667eea;
+        }
+        
+        .footer a:hover {
+            color: #764ba2;
+            text-decoration: none;
+        }
+        
+        .pagination .page-link {
+            color: #764ba2;
+        }
+        
+        .pagination .page-item.active .page-link {
+            background-color: #764ba2;
+            border-color: #764ba2;
+        }
+        
+        .autocomplete-suggestions {
+            border: 1px solid #ddd;
+            background: white;
+            overflow: auto;
+            max-height: 300px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,.1);
+        }
+        
+        .autocomplete-suggestion {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .autocomplete-suggestion:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .autocomplete-selected {
+            background-color: #e9ecef;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-dna mr-2"></i>ClinVar Database
+            </a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" 
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item {% if request.path == '/' %}active{% endif %}">
+                        <a class="nav-link" href="/">
+                            <i class="fas fa-home mr-1"></i>Home
+                        </a>
+                    </li>
+                    <li class="nav-item {% if request.path.startswith('/variants') %}active{% endif %}">
+                        <a class="nav-link" href="/variants">
+                            <i class="fas fa-dna mr-1"></i>Variants
+                        </a>
+                    </li>
+                    <li class="nav-item {% if request.path.startswith('/genes') %}active{% endif %}">
+                        <a class="nav-link" href="/genes">
+                            <i class="fas fa-gene mr-1"></i>Genes
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" 
+                           data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-search mr-1"></i>Quick Search
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                            <a class="dropdown-item" href="/condition/autism">
+                                <i class="fas fa-brain mr-2"></i>Autism
+                            </a>
+                            <a class="dropdown-item" href="/condition/cancer">
+                                <i class="fas fa-procedures mr-2"></i>Cancer
+                            </a>
+                            <a class="dropdown-item" href="/condition/diabetes">
+                                <i class="fas fa-syringe mr-2"></i>Diabetes
+                            </a>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item" href="/gene/TP53">
+                                <i class="fas fa-gene mr-2"></i>TP53 Gene
+                            </a>
+                            <a class="dropdown-item" href="/gene/BRCA1">
+                                <i class="fas fa-gene mr-2"></i>BRCA1 Gene
+                            </a>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-4">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Page Content -->
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4">
+                    <h5><i class="fas fa-dna"></i> ClinVar Database</h5>
+                    <p> Exploring clinical variants and their associations with diseases.</p>
+                </div>
+                <div class="col-md-4">
+                    <h5><i class="fas fa-link"></i> Quick Links</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="/"><i class="fas fa-home mr-2"></i>Home</a></li>
+                        <li><a href="/variants"><i class="fas fa-dna mr-2"></i>All Variants</a></li>
+                        <li><a href="/genes"><i class="fas fa-gene mr-2"></i>All Genes</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h5><i class="fas fa-external-link-alt"></i> External Resources</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="https://www.ncbi.nlm.nih.gov/clinvar/" target="_blank">
+                            <i class="fas fa-database mr-2"></i>NCBI ClinVar
+                        </a></li>
+                        <li><a href="https://www.ensembl.org/" target="_blank">
+                            <i class="fas fa-code-branch mr-2"></i>Ensembl
+                        </a></li>
+                        <li><a href="https://www.uniprot.org/" target="_blank">
+                            <i class="fas fa-atom mr-2"></i>UniProt
+                        </a></li>
+                        <li><a href="https://www.genome.gov/" target="_blank">
+                            <i class="fas fa-dna mr-2"></i>NHGRI
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
+            <hr style="background-color: rgba(255,255,255,0.1);">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-0">&copy; 2024 ClinVar Database. All rights reserved.</p>
+                </div>
+                <div class="col-md-6 text-right">
+                    <p class="mb-0">
+                        <i class="fas fa-envelope mr-2"></i>
+                        <a href="mailto:admin@clinvardb.com">admin@clinvardb.com</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" 
+            integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" 
+            crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/bootstrap-table@1.18.3/dist/bootstrap-table.min.js"></script>
+    
+    <!-- Global Scripts -->
+    <script>
+        // Enable Bootstrap tooltips
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip()
+        });
+        
+        // Enable Bootstrap popovers
+        $(function () {
+            $('[data-toggle="popover"]').popover()
+        });
+        
+        // Auto-dismiss alerts after 5 seconds
+        $(document).ready(function() {
+            setTimeout(function() {
+                $('.alert').alert('close');
+            }, 5000);
+        });
+        
+        // Form validation
+        (function() {
+            'use strict';
+            window.addEventListener('load', function() {
+                var forms = document.getElementsByClassName('needs-validation');
+                var validation = Array.prototype.filter.call(forms, function(form) {
+                    form.addEventListener('submit', function(event) {
+                        if (form.checkValidity() === false) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                        }
+                        form.classList.add('was-validated');
+                    }, false);
+                });
+            }, false);
+        })();
+        
+        // Smooth scrolling for anchor links
+        $(document).on('click', 'a[href^="#"]', function (event) {
+            event.preventDefault();
+            $('html, body').animate({
+                scrollTop: $($.attr(this, 'href')).offset().top - 70
+            }, 500);
+        });
+        
+        // Active nav link highlighting
+        $(document).ready(function() {
+            var currentPath = window.location.pathname;
+            $('.navbar-nav .nav-link').each(function() {
+                var linkPath = $(this).attr('href');
+                if (currentPath === linkPath || 
+                   (linkPath !== '/' && currentPath.startsWith(linkPath))) {
+                    $(this).addClass('active');
+                    $(this).parent().addClass('active');
+                } else {
+                    $(this).removeClass('active');
+                    $(this).parent().removeClass('active');
+                }
+            });
+        });
+    </script>
+    
+    <!-- Page Specific Scripts -->
+    {% block scripts %}{% endblock %}
+</body>
+</html>

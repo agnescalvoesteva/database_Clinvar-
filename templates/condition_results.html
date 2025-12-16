@@ -1,0 +1,289 @@
+{% extends "template.html" %}
+
+{% block title %}{{ condition }} - Results{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1 class="mb-4">
+            <i class="fas fa-stethoscope"></i> {{ condition }}
+            <small class="text-muted">({{ total_variants }} variants)</small>
+        </h1>
+        
+        <!-- SECCIÓN CON PIE CHART SOLO -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <i class="fas fa-chart-pie"></i> Gene Distribution - {{ condition|title }}
+            </div>
+            <div class="card-body">
+                <div style="height: 400px;">
+                    <canvas id="genePieChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Statistics Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body text-center">
+                        <h6 class="card-title">Total Variants</h6>
+                        <h3>{{ total_variants }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body text-center">
+                        <h6 class="card-title">Unique Genes</h6>
+                        <h3>{{ genes|length }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Genes Section -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-gene"></i> Associated Genes ({{ genes|length }})
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for gene in genes %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <a href="/gene/{{ gene.gene }}">{{ gene.gene }}</a>
+                                </h5>
+                                
+                                <p class="card-text">
+                                    <small>
+                                        {% if gene.description %}
+                                            {{ gene.description[:100] }}{% if gene.description|length > 100 %}...{% endif %}
+                                        {% else %}
+                                            No description available
+                                        {% endif %}
+                                    </small>
+                                </p>
+                                
+                                <div class="mb-2">
+                                    <span class="badge badge-primary">
+                                        {{ gene.variant_count }} variant{% if gene.variant_count != 1 %}s{% endif %}
+                                    </span>
+                                </div>
+                                
+                                <div class="small text-muted mb-2">
+                                    {% if gene.ensembl_id and gene.ensembl_id != 'None' %}
+                                    <div><strong>Ensembl:</strong> {{ gene.ensembl_id }}</div>
+                                    {% endif %}
+                                    
+                                    {% if gene.uniprot_id and gene.uniprot_id != 'None' %}
+                                    <div><strong>UniProt:</strong> {{ gene.uniprot_id }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <a href="/gene/{{ gene.gene }}" class="btn btn-sm btn-primary mt-2">
+                                    <i class="fas fa-external-link-alt"></i> View Details
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="col-md-12">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            No genes found for this condition.
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Variants Table -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-dna"></i> Variants
+                {% if pagination and pagination.total_pages > 1 %}
+                <span class="float-right">
+                    Page {{ pagination.page }} of {{ pagination.total_pages }}
+                </span>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Variant ID</th>
+                                <th>Gene</th>
+                                <th>Clinical Significance</th>
+                                <th>Diseases</th>
+                                <th>Last Updated</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for variant in variants %}
+                            <tr>
+                                <td>{{ variant.variant_id }}</td>
+                                <td>
+                                    {% if variant.gene and variant.gene != 'None' %}
+                                    <a href="/gene/{{ variant.gene }}">{{ variant.gene }}</a>
+                                    {% else %}
+                                    N/A
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge 
+                                        {% if variant.clinical_significance and 'pathogenic' in variant.clinical_significance|lower %}badge-danger
+                                        {% elif variant.clinical_significance and 'benign' in variant.clinical_significance|lower %}badge-success
+                                        {% elif variant.clinical_significance and 'uncertain' in variant.clinical_significance|lower %}badge-warning
+                                        {% else %}badge-secondary{% endif %}">
+                                        {{ variant.clinical_significance if variant.clinical_significance else 'Unknown' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if variant.diseases %}
+                                        {{ variant.diseases[:80] }}{% if variant.diseases|length > 80 %}...{% endif %}
+                                    {% else %}
+                                        No diseases specified
+                                    {% endif %}
+                                </td>
+                                <td>{{ variant.last_updated if variant.last_updated else 'N/A' }}</td>
+                                <td>
+                                    <a href="/variant/{{ variant.variant_id }}" class="btn btn-sm btn-info">
+                                        <i class="fas fa-eye"></i> Details
+                                    </a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center">
+                                    <div class="alert alert-info">
+                                        No variants found for this condition.
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                {% if pagination and pagination.total_pages > 1 %}
+                <div class="d-flex justify-content-center mt-4">
+                    {{ pagination.links }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- INCLUIR CHART.JS -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+// Crear pie chart con datos REALES de los genes
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('genePieChart').getContext('2d');
+    
+    // Obtener datos de los genes (pasados desde Flask)
+    const genesData = {{ genes|tojson|safe }};
+    
+    // Preparar datos para el gráfico
+    let labels = [];
+    let data = [];
+    let colors = [
+        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+        '#FF9F40', '#8AC926', '#1982C4', '#6A4C93', '#FF595E'
+    ];
+    
+    // Ordenar genes por variant_count (mayor a menor) y tomar top 10
+    const sortedGenes = genesData.sort((a, b) => b.variant_count - a.variant_count);
+    const topGenes = sortedGenes.slice(0, 10);
+    
+    // Agrupar el resto como "Other"
+    let otherCount = 0;
+    sortedGenes.slice(10).forEach(gene => {
+        otherCount += gene.variant_count;
+    });
+    
+    // Agregar top genes al gráfico
+    topGenes.forEach((gene, index) => {
+        labels.push(gene.gene + ' (' + gene.variant_count + ')');
+        data.push(gene.variant_count);
+    });
+    
+    // Agregar "Other" si hay más genes
+    if (otherCount > 0) {
+        labels.push('Other Genes');
+        data.push(otherCount);
+        colors.push('#C0C0C0');
+    }
+    
+    // Si no hay datos, mostrar mensaje
+    if (data.length === 0) {
+        const canvasContainer = document.querySelector('#genePieChart').parentElement;
+        canvasContainer.innerHTML = '<div class="alert alert-info text-center m-4"><i class="fas fa-info-circle"></i> No gene data available for visualization</div>';
+        return;
+    }
+    
+    const genePieChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: colors,
+                borderColor: '#fff',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Gene Distribution by Variant Count',
+                    font: {
+                        size: 16,
+                        weight: 'bold'
+                    }
+                },
+                legend: {
+                    position: 'right',
+                    labels: {
+                        padding: 15,
+                        usePointStyle: true,
+                        font: {
+                            size: 11
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.raw || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = Math.round((value / total) * 100);
+                            return `${label}: ${value} variants (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+
+<style>
+.bg-info {
+    background-color: #17a2b8 !important;
+}
+</style>
+{% endblock %}

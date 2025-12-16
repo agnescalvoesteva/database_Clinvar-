@@ -1,0 +1,100 @@
+{% extends "template.html" %}
+
+{% block title %}Variant {{ variant.variant_id }} - Details{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h1 class="mb-4">
+            <i class="fas fa-dna"></i> Variant {{ variant.variant_id }}
+        </h1>
+        
+        <!-- Variant Information Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-info-circle"></i> Variant Information
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Variant ID:</strong> {{ variant.variant_id }}</p>
+                        {% if variant.gene %}
+                        <p><strong>Gene:</strong> 
+                            <a href="/gene/{{ variant.gene }}">{{ variant.gene }}</a>
+                        </p>
+                        {% endif %}
+                        <p><strong>Condition:</strong> {{ variant.searched_condition }}</p>
+                        <p><strong>Last Updated:</strong> {{ variant.last_updated or 'N/A' }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Clinical Significance:</strong></p>
+                        <span class="badge 
+                            {% if 'pathogenic' in variant.clinical_significance|lower %}badge-danger
+                            {% elif 'benign' in variant.clinical_significance|lower %}badge-success
+                            {% elif 'uncertain' in variant.clinical_significance|lower %}badge-warning
+                            {% else %}badge-secondary{% endif %} badge-pill p-2">
+                            {{ variant.clinical_significance or 'Unknown' }}
+                        </span>
+                    </div>
+                </div>
+                
+                {% if variant.diseases %}
+                <hr>
+                <p><strong>Associated Diseases:</strong></p>
+                <p>{{ variant.diseases }}</p>
+                {% endif %}
+                
+                {% if variant.description %}
+                <hr>
+                <p><strong>Description:</strong></p>
+                <p>{{ variant.description }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <!-- Gene Information -->
+        {% if variant.ensembl_id or variant.uniprot_id %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-gene"></i> Gene Information
+            </div>
+            <div class="card-body">
+                {% if variant.gene %}
+                <h5>{{ variant.gene }}</h5>
+                {% endif %}
+                {% if variant.ensembl_id %}
+                <p><strong>Ensembl:</strong> {{ variant.ensembl_id }}</p>
+                {% endif %}
+                {% if variant.uniprot_id %}
+                <p><strong>UniProt:</strong> {{ variant.uniprot_id }}</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Similar Variants -->
+        {% if similar_variants %}
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-exchange-alt"></i> Similar Variants
+            </div>
+            <div class="card-body">
+                <ul class="list-group">
+                    {% for sim_var in similar_variants %}
+                    <li class="list-group-item">
+                        <a href="/variant/{{ sim_var.variant_id }}">{{ sim_var.variant_id }}</a>
+                        <br>
+                        <small>{{ sim_var.clinical_significance }}</small>
+                        <br>
+                        <small class="text-muted">{{ sim_var.searched_condition }}</small>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

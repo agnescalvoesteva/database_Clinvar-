@@ -1,0 +1,58 @@
+{% extends "template.html" %}
+
+{% block title %}All Genes{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1 class="mb-4">
+            <i class="fas fa-gene"></i> All Genes
+            <small class="text-muted">({{ total_genes }} total)</small>
+        </h1>
+        
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-list"></i> Genes List
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for gene in genes %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <a href="/gene/{{ gene.gene }}">{{ gene.gene }}</a>
+                                </h5>
+                                <p class="card-text">
+                                    <small>{{ gene.description|truncate(100) }}</small>
+                                </p>
+                                <div class="mb-2">
+                                    <span class="badge badge-primary">
+                                        {{ gene.total_variants }} variants
+                                    </span>
+                                </div>
+                                <div class="small text-muted">
+                                    {% if gene.ensembl_id %}
+                                    <div>Ensembl: {{ gene.ensembl_id }}</div>
+                                    {% endif %}
+                                    {% if gene.uniprot_id %}
+                                    <div>UniProt: {{ gene.uniprot_id }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <a href="/gene/{{ gene.gene }}" class="btn btn-sm btn-primary">
+                                    View Details
+                                </a>
+                            
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

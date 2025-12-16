@@ -1,0 +1,66 @@
+{% extends "template.html" %}
+
+{% block title %}All Variants{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1 class="mb-4">
+            <i class="fas fa-dna"></i> All Variants
+            <small class="text-muted">({{ total_variants }} total)</small>
+        </h1>
+        
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-list"></i> Variants List
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Variant ID</th>
+                                <th>Gene</th>
+                                <th>Clinical Significance</th>
+                                <th>Diseases</th>
+                                <th>Condition</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for variant in variants %}
+                            <tr>
+                                <td>{{ variant.variant_id }}</td>
+                                <td>
+                                    {% if variant.gene %}
+                                    <a href="/gene/{{ variant.gene }}">{{ variant.gene }}</a>
+                                    {% else %}
+                                    N/A
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge 
+                                        {% if 'pathogenic' in variant.clinical_significance|lower %}badge-danger
+                                        {% elif 'benign' in variant.clinical_significance|lower %}badge-success
+                                        {% elif 'uncertain' in variant.clinical_significance|lower %}badge-warning
+                                        {% else %}badge-secondary{% endif %}">
+                                        {{ variant.clinical_significance or 'Unknown' }}
+                                    </span>
+                                </td>
+                                <td>{{ variant.diseases|truncate(60) }}</td>
+                                <td>{{ variant.searched_condition }}</td>
+                                <td>
+                                    <a href="/variant/{{ variant.variant_id }}" class="btn btn-sm btn-info">
+                                        View
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

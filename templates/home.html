@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=yes">
+    <title>ClinVar Explorer - Clinical Variant Database</title>
+    
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.18.3/dist/bootstrap-table.min.css">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='images/clinvar_logo.png') }}">
+
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/5.7.0/d3.js"></script>
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/bootstrap-table@1.18.3/dist/bootstrap-table.min.js"></script>
+</head>
+
+<body>
+    {% extends "template.html" %}
+    {% block content %}
+    <div class="container">
+        <br>
+        <div class="jumbotron">
+            <div class="col-xl-12">
+                <div class="content">
+                    <div align="center" width="700px">
+                        <h2 class="featurette-heading">
+                            <i class="fas fa-dna"></i> ClinVar Explorer
+                        </h2>
+                        <h4>Comprehensive database for clinical variants, genes, and disease associations</h4>
+                        <p class="lead text-muted mt-3">Search and analyze genetic variants with clinical significance</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Form Section -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header text-white" style="background-color: #4285F4;">
+                <i class="fas fa-search mr-1"></i> Search Clinical Variants by Disease
+            </div>
+            <div class="card-body">
+                <form method="POST" action="/search" class="needs-validation" novalidate>
+                    <div class="form-row align-items-end">
+                        <div class="col-md-8 mb-3">
+                            <label for="conditionInput" class="font-weight-bold">Search Condition/Disease</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-stethoscope"></i></span>
+                                </div>
+                                <input type="text" class="form-control ui-autocomplete-input" 
+                                       id="conditionInput" name="condition" 
+                                       placeholder="Enter condition (e.g., autism, breast cancer, diabetes)" 
+                                       required autocomplete="off">
+                                <div class="invalid-feedback">
+                                    Please enter a condition to search.
+                                </div>
+                            </div>
+                            <small class="form-text text-muted mt-2">
+                                <i class="fas fa-lightbulb"></i> Examples: autism, breast cancer, diabetes, cardiovascular disease
+                            </small>
+                        </div>
+                        <div class="col-md-1 mb-3">
+                            <label class="font-weight-bold" style="visibility: hidden;">Search</label>
+                            <button type="submit" class="btn btn-primary btn-block" style="padding: 8px 12px;">
+                                <i class="fas fa-search mr-1"></i> Search
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Condition Distribution Chart -->
+        {% if condition_chart %}
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header text-white" style="background-color: #34A853;">
+                <i class="fas fa-chart-bar mr-1"></i> Condition Distribution
+            </div>
+            <div class="card-body">
+                <div id="condition-chart"></div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Quick Search Options -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card shadow-sm">
+                    <div class="card-header text-white" style="background-color: #EA4335;">
+                        <i class="fas fa-gene mr-1"></i> Quick Gene Search
+                    </div>
+                    <div class="card-body">
+                        <div class="ui-widget">
+                            <label for="geneSearch" class="font-weight-bold">Search by Gene Symbol</label>
+                            <div class="mb-2">
+                                <small class="text-muted">
+                                    <i class="fas fa-lightbulb"></i> Examples: 
+                                    <a href="#" class="example-link" data-gene="PTEN">PTEN</a>, 
+                                    <a href="#" class="example-link" data-gene="TP53">TP53</a>, 
+                                    <a href="#" class="example-link" data-gene="BRCA1">BRCA1</a>
+                                </small>
+                            </div>
+                            <div class="input-group">
+                                <input type="text" class="form-control ui-autocomplete-input" 
+                                       autocomplete="off" id="geneSearch" 
+                                       placeholder="Enter gene symbol (e.g., PTEN)" required>
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-primary" type="button" onclick="quickGeneSearch()" style="padding: 8px 16px;">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card shadow-sm">
+                    <div class="card-header text-white" style="background-color: #FBBC05;">
+                        <i class="fas fa-vial mr-1"></i> Quick Variant Search
+                    </div>
+                    <div class="card-body">
+                        <div class="ui-widget">
+                            <label for="variantSearch" class="font-weight-bold">Search by Variant ID</label>
+                            <div class="mb-2">
+                                <small class="text-muted">
+                                    <i class="fas fa-lightbulb"></i> Examples: 
+                                    <a href="#" class="example-link" data-variant="156468">156468</a>, 
+                                    <a href="#" class="example-link" data-variant="183085">183085</a>
+                                </small>
+                            </div>
+                            <div class="input-group">
+                                <input type="text" class="form-control ui-autocomplete-input" 
+                                       autocomplete="off" id="variantSearch" 
+                                       placeholder="Enter ClinVar variant ID" required>
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-primary" type="button" onclick="quickVariantSearch()" style="padding: 8px 16px;">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Analyses Table -->
+        {% if recent_analyses %}
+        <div class="card mb-4 shadow-sm" id="recent-analyses">
+            <div class="card-header text-white" style="background-color: #757575;">
+                <i class="fas fa-history mr-1"></i> Recent Analyses
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover" width="100%">
+                        <thead class="thead-light">
+                            <tr>
+                                <th data-sortable="true">Condition</th>
+                                <th data-sortable="true">Variants Found</th>
+                                <th data-sortable="true">Genes</th>
+                                <th data-sortable="true">Date Analyzed</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for analysis in recent_analyses %}
+                            <tr>
+                                <td><strong>{{ analysis['condition'] }}</strong></td>
+                                <td>{{ analysis['variant_count'] }}</td>
+                                <td>{{ analysis['gene_count'] }}</td>
+                                <td>{{ analysis['created_at'][:16] }}</td>
+                                <td>
+                                    <a href="/condition/{{ analysis['condition'] }}" 
+                                       class="btn btn-sm btn-outline-primary" style="padding: 3px 10px;">
+                                        <i class="fas fa-eye"></i> View
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-info mb-4 shadow-sm">
+            <h4><i class="fas fa-info-circle"></i> Database Empty</h4>
+            <p>Start by searching for a condition above to populate the database with ClinVar variants.</p>
+            <p>Example searches: "autism", "breast cancer", "diabetes", "Alzheimer's disease"</p>
+        </div>
+        {% endif %}
+
+        <!-- Database Navigation -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body text-center d-flex flex-column">
+                        <i class="fas fa-dna fa-3x mb-3 text-primary"></i>
+                        <h5 class="card-title">Browse All Variants</h5>
+                        <p class="card-text flex-grow-1">Explore all clinical variants with detailed information.</p>
+                        <a href="/variants" class="btn btn-primary mt-2">View Variants</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body text-center d-flex flex-column">
+                        <i class="fas fa-gene fa-3x mb-3 text-success"></i>
+                        <h5 class="card-title">Browse All Genes</h5>
+                        <p class="card-text flex-grow-1">Explore genes associated with clinical variants.</p>
+                        <a href="/genes" class="btn btn-success mt-2">View Genes</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Information -->
+        <div class="jumbotron shadow-sm">
+            <h5><i class="fas fa-book"></i> About ClinVar Explorer</h5>
+            <p>This database provides access to clinical variants from NCBI's ClinVar database, enriched with gene information from Ensembl and UniProt. Search for disease conditions to find associated genetic variants and their clinical significance.</p>
+            
+            <hr class="my-4">
+            
+            <h5><i class="fas fa-database"></i> Data Sources</h5>
+            <ul class="list-unstyled">
+                <li><i class="fas fa-check-circle text-success mr-2"></i><strong>ClinVar:</strong> Clinical variant information from NCBI</li>
+                <li><i class="fas fa-check-circle text-success mr-2"></i><strong>Ensembl:</strong> Gene annotations and identifiers</li>
+                <li><i class="fas fa-check-circle text-success mr-2"></i><strong>UniProt:</strong> Protein information and cross-references</li>
+            </ul>
+            
+            <hr class="my-4">
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <h6><i class="fas fa-external-link-alt"></i> External Resources</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="https://www.ncbi.nlm.nih.gov/clinvar/" target="_blank" class="text-primary">NCBI ClinVar <i class="fas fa-external-link-alt fa-xs"></i></a></li>
+                        <li><a href="https://www.ensembl.org/" target="_blank" class="text-primary">Ensembl Genome Browser <i class="fas fa-external-link-alt fa-xs"></i></a></li>
+                        <li><a href="https://www.uniprot.org/" target="_blank" class="text-primary">UniProt Protein Database <i class="fas fa-external-link-alt fa-xs"></i></a></li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6><i class="fas fa-info-circle"></i> Quick Tips</h6>
+                    <ul>
+                        <li>Use specific disease names for better results</li>
+                        <li>Gene symbols are case-sensitive (e.g., TP53)</li>
+                        <li>Check variant IDs in ClinVar for direct lookup</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Functions -->
+    <script>
+        // Quick Gene Search Function
+        function quickGeneSearch() {
+            var genename = document.getElementById("geneSearch").value.trim();
+            if (genename.length !== 0) {
+                window.location.href = "/gene/" + genename;
+            } else {
+                alert("Please enter a gene symbol");
+            }
+        }
+
+        // Quick Variant Search Function
+        function quickVariantSearch() {
+            var variantId = document.getElementById("variantSearch").value.trim();
+            if (variantId.length !== 0) {
+                window.location.href = "/variant/" + variantId;
+            } else {
+                alert("Please enter a variant ID");
+            }
+        }
+
+        // Autocomplete for genes
+        $(document).ready(function() {
+            // Example link handlers
+            $(".example-link[data-gene]").click(function(e) {
+                e.preventDefault();
+                var gene = $(this).data('gene');
+                $("#geneSearch").val(gene);
+            });
+
+            $(".example-link[data-variant]").click(function(e) {
+                e.preventDefault();
+                var variant = $(this).data('variant');
+                $("#variantSearch").val(variant);
+            });
+
+            // Get gene list from server
+            $.get("/api/genes_list", function(data) {
+                var geneList = data.genes || [];
+                $("#geneSearch").autocomplete({
+                    source: geneList,
+                    minLength: 2
+                });
+            });
+
+            // Autocomplete for conditions
+            var conditions = JSON.parse('{{ conditions | tojson }}');
+            $("#conditionInput").autocomplete({
+                source: conditions,
+                minLength: 2
+            });
+
+            // Form validation
+            (function() {
+                'use strict';
+                window.addEventListener('load', function() {
+                    var forms = document.getElementsByClassName('needs-validation');
+                    var validation = Array.prototype.filter.call(forms, function(form) {
+                        form.addEventListener('submit', function(event) {
+                            if (form.checkValidity() === false) {
+                                event.preventDefault();
+                                event.stopPropagation();
+                            }
+                            form.classList.add('was-validated');
+                        }, false);
+                    });
+                }, false);
+            })();
+        });
+
+        // Plotly chart rendering
+        {% if condition_chart %}
+        var conditionChart = {{ condition_chart|safe }};
+        Plotly.newPlot('condition-chart', conditionChart.data, conditionChart.layout);
+        {% endif %}
+    </script>
+    {% endblock %}
+</body>
+</html>
